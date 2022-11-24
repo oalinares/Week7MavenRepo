@@ -18,7 +18,9 @@ public class ProjectsApp {
 		private List<String> operations = List.of(
 				"1) Add a project",
 				"2) List projects",
-				"3) Select a project"
+				"3) Select a project",
+				"4) Update project details",
+				"5) Delete a project"
 		);
 		// @formatter:on
 
@@ -46,6 +48,12 @@ public class ProjectsApp {
 					case 3:
 						selectProject();
 						break;
+					case 4:
+						updateProjectDetails();
+						break;
+					case 5:
+						deleteProject();
+						break;
 					default:
 						System.out.println("\n" + selection + " is not a valid selection. Try again.");
 					}
@@ -55,8 +63,66 @@ public class ProjectsApp {
 				}
 			}
 		}
+		/**
+		 * When this option is selected in the menu, it will display a list of the projects that have been created,
+		 * and will ask for the projectId of the project that you want to delete.
+		 * @param projectId
+		 * @return The method should return '1' if the projectId selected has been deleted, else it should throw an exception if '0' is returned.
+		 */
+		private void deleteProject() {
+			listProjects();
+			
+			Integer projectId = getIntInput("Enter the project ID you want to delete.");
+			
+			if(Objects.nonNull(projectId)) {
+				projectService.deleteProject(projectId);
+				
+				System.out.println("You have deleted project " + projectId);
+				
+			if(Objects.nonNull(curProject) && curProject.getProjectId().equals(projectId)) {
+				curProject = null;
+			}
+			}
+		}
+		/**
+		 * This method will currently run if prior the user has selected a project, which enables for the project 
+		 * to updated by using the curProject's projectId to get and set the same ID, but with new data in each
+		 * parameter set by the user.
+		 * @param project
+		 * @return Returns the entire project with the new data that has been entered by the user, except Materials, Steps, and Categories,
+		 * which currently are not being altered through this method.
+		 */
+		private void updateProjectDetails() {
+			if(Objects.isNull(curProject)) {
+				System.out.println("\nPlease select a project.");
+			return;
+			}
+			String projectName = getStringInput("Enter the project name [" + curProject.getProjectName() + "]");
+			BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours [" + curProject.getEstimatedHours() + "]");
+			BigDecimal actualHours = getDecimalInput("Enter the actual hours [" + curProject.getActualHours() + "]");
+			Integer difficulty = getIntInput("Enter the project difficulty (1-5) [" + curProject.getDifficulty() + "]");
+			String notes = getStringInput("Enter the project notes [" + curProject.getNotes() + "]");
+			
+			Project project = new Project();
+			
+			project.setProjectId(curProject.getProjectId());
+			project.setProjectName(Objects.isNull(projectName) ? curProject.getProjectName() : projectName);
+			project.setEstimatedHours(Objects.isNull(estimatedHours) ? curProject.getEstimatedHours() : estimatedHours);
+			project.setActualHours(Objects.isNull(actualHours) ? curProject.getActualHours() : actualHours);
+			project.setDifficulty(Objects.isNull(difficulty) ? curProject.getDifficulty() : difficulty);
+			project.setNotes(Objects.isNull(notes) ? curProject.getNotes() : notes);
+			
+			projectService.modifyProjectDetails(project);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+		}
+		/**
+		 * Method retrieves a single project based on the project's Id
+		 * @param projectId
+		 * @return Returns the project with details about it based on the ID.
+		 */
 		private void selectProject() {
 			listProjects();
+			
 			Integer projectId = getIntInput("Enter a project ID to select a project");
 			curProject = null;
 			curProject = projectService.fetchProjectById(projectId);
@@ -74,6 +140,12 @@ public class ProjectsApp {
 			System.out.println("   " + project.getProjectId() 
 			+ ": " + project.getProjectName()));
 		}
+		/**
+		 * Method used to insert a project, and values associated with the project.
+		 * @param project
+		 * @return Returns a project with the values inserted by the user, and the project's ID
+		 * is set by your schema's code.
+		 */
 		private void createProject() {
 			String projectName = getStringInput("Enter the project name");
 			BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours");
@@ -90,7 +162,9 @@ public class ProjectsApp {
 			project.setNotes(notes);
 			
 			Project dbProject = projectService.addProject(project);
-			System.out.println("You added this recipe:\n" + dbProject);
+			System.out.println("You added this project:\n" + dbProject);
+			
+			//curProject = projectService.fetchProjectById(dbProject.getRecipeId());
 			
 		}
 		private BigDecimal getDecimalInput(String prompt) {
@@ -105,10 +179,18 @@ public class ProjectsApp {
 			}
 		
 		}
+		/**
+		 * Exits the menu.
+		 * @return Prompts that you have exited the menu.
+		 */
 		private boolean exitMenu() {
 			System.out.println("\nExiting the menu. Goodbye!");
 			return true;
 		}
+		/**
+		 * Requests the user's selection from the menu
+		 * @return Return's the user's selection from the menu, or exits.
+		 */
 		private int getUserSelection() {
 			printOperations();
 			Integer input = getIntInput("Enter a menu selection");
